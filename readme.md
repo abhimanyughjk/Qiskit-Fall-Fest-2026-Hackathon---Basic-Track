@@ -1,40 +1,44 @@
-# Qiskit Fall Fest 2026 - Basic Track
-**Author**: Abhimanyu Bishnoi
-**Environment**: Google Colab
+# Qiskit Fall Fest 2026: Geometry-Aware Quantum Cloud Challenge
+**Author:** Abhimanyu Bishnoi  
+**Environment:** Google Colab  
 
-## overview
-this project builds a verified bell pair between two fixed ports across three processor models (2016, contemporary, hyperbolic)[cite: 1, 2]. the setup establishes ideal and noisy baselines, then adds a zz parity check to see if error detection is worth the routing cost[cite: 4]. the entire workflow and benchmarking was run in google colab.
+## Overview
+This project establishes a verified Bell pair between two fixed port qubits across three processor models: a 2016-inspired 5-qubit graph, a 156-qubit Contemporary IBM-style backend, and a 35-qubit Hyperbolic-inspired lattice[cite: 1, 2]. The primary objective is to measure ideal and noisy baselines, then implement a justified error-detection strategy to evaluate whether the protection benefits outweigh the extra routing costs[cite: 1, 4]. The entire workflow, from circuit compilation to noisy simulation benchmarking, was executed in Google Colab.
 
-## methodology & optimization
-used the explorer-level zz parity check[cite: 4]. since the ideal $|\Phi^+\rangle$ state has a zz parity of +1, an ancilla qubit measures zz[cite: 4]. if it returns -1, the shot is dropped (post-selection)[cite: 4].
+## Methodology & Optimization
+I implemented an **Explorer-level ZZ Parity Check**[cite: 4]. Because the target $\vert{}\Phi^+\rangle$ state inherently has a ZZ parity of +1, an extra ancilla qubit is used to measure the ZZ observable during the circuit[cite: 4]. If the check yields a -1 (indicating an error), the shot is discarded via post-selection[cite: 4]. 
 
-to avoid memory crashes on the 156-qubit contemporary processor during transpilation, i optimized the ancilla placement. using rustworkx, i pulled the distance matrix and explicitly assigned the ancilla to the physical qubit with the shortest total distance to both ports to minimize swap routing.
+During development, the transpiler encountered memory crashes on the 156-qubit contemporary processor due to suboptimal ancilla placement. To resolve this, I utilized `rustworkx` to generate a shortest-path distance matrix for the hardware's coupling graph. By dynamically assigning the ancilla to the physical qubit with the absolute minimum combined distance to both ports, I successfully optimized the routing pathways and stabilized the compilation.
 
-## 9-case comparison
+## 9-Case Comparison Results
 
 | Model | Case | Yield (%) | Fidelity | Verified | Max 2-qubit gates | Max explicit SWAPs |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| 2016 | Ideal | 100.0 | 1.0000 | True | 7 | 0 |
-| 2016 | Noisy | 100.0 | 0.8469 | True | 7 | 0 |
-| 2016 | Protected | 90.5 | 0.8295 | True | 12 | 0 |
-| contemporary | Ideal | 100.0 | 1.0000 | True | 7 | 0 |
-| contemporary | Noisy | 100.0 | 0.9490 | True | 7 | 0 |
-| contemporary | Protected | 96.6 | 0.9570 | True | 12 | 0 |
-| hyperbolic | Ideal | 100.0 | 1.0000 | True | 7 | 0 |
-| hyperbolic | Noisy | 100.0 | 0.9572 | True | 7 | 0 |
-| hyperbolic | Protected | 95.8 | 0.9650 | True | 12 | 0 |
+| **2016** | Ideal | 100.0 | 1.0000 | True | 7 | 0 |
+| **2016** | Noisy | 100.0 | 0.8469 | True | 7 | 0 |
+| **2016** | Protected | 90.5 | 0.8295 | True | 12 | 0 |
+| **Contemporary** | Ideal | 100.0 | 1.0000 | True | 7 | 0 |
+| **Contemporary** | Noisy | 100.0 | 0.9490 | True | 7 | 0 |
+| **Contemporary** | Protected | 96.6 | 0.9570 | True | 12 | 0 |
+| **Hyperbolic** | Ideal | 100.0 | 1.0000 | True | 7 | 0 |
+| **Hyperbolic** | Noisy | 100.0 | 0.9572 | True | 7 | 0 |
+| **Hyperbolic** | Protected | 95.8 | 0.9650 | True | 12 | 0 |
 
-## interpreting results
+*(Data derived from 10,000 shots per setting[cite: 8, 9])*
 
-**1. swap decomposition & routing**
-explicit swaps show as 0, but the routing cost is heavily reflected in the 2-qubit gates[cite: 4]. the logical circuit only needs 1 cnot[cite: 2]. since the ports are distance 3 apart, the transpiler adds 2 swaps to move the states[cite: 1, 2]. swaps aren't native, so qiskit decomposes each into 3 cnots (1 logical + 6 routing = 7 total 2-qubit gates)[cite: 1]. routing the parity check ancilla bumps this to 12.
+## Interpretation of Results
 
-**2. protection overhead vs benefit**
-*   **2016 model:** protection failed. fidelity dropped from 0.8469 to 0.8295. the older hardware has high noise, so adding routing gates caused more errors than the parity check could catch[cite: 1, 4].
-*   **contemporary & hyperbolic:** protection worked. fidelity improved because the base noise is low enough to handle the deeper circuit. discarding ~4% of shots was a good trade-off for higher fidelity[cite: 2, 4].
+**1. SWAP Decomposition & Routing Overhead**
+Explicit SWAP operations are listed as 0, but the routing overhead is highly visible in the two-qubit gate counts. The logical Bell circuit requires exactly 1 CNOT[cite: 2]. Because the designated ports are separated by a distance of 3[cite: 8, 9], the transpiler inserted 2 SWAPs to connect the states. Since SWAP is not a native basis gate for these models, Qiskit decomposed each SWAP into 3 CNOTs[cite: 1]. This results in 7 total two-qubit gates for the baselines (1 logical + 6 routing). Adding the parity check ancilla increased the physical footprint to 12 two-qubit gates[cite: 9].
 
-**3. architectural advantage**
-the hyperbolic model got the best fidelity in both noisy (0.9572) and protected (0.9650) cases. the lattice geometry gives better cycle pathways for routing compared to standard grids[cite: 1].
+**2. Protection Overhead vs. Benefit**
+* **2016 Model:** The protection strategy failed. Fidelity dropped from 0.8469 to 0.8295[cite: 9]. Because the historical architecture relies on a high-error synthetic noise model[cite: 1], the sheer volume of extra routing operations introduced more errors than the parity check was capable of detecting.
+* **Contemporary & Hyperbolic Models:** The protection strategy succeeded. The base hardware noise is low enough that the circuits survived the increased depth of 25[cite: 1, 9]. Discarding roughly 4% of the total shots was a highly effective trade-off for the improved conditional fidelity[cite: 9].
 
-## future system recommendation
-future cloud quantum compilers need to dynamically toggle error-detection checks based on the specific hardware topology and current noise profile. blindly applying protection hurts performance on older or constrained architectures. transpilers should calculate a cost-benefit threshold and only insert ancilla checks if the physical qubits can survive the required swap routing[cite: 4, 5].
+**3. Architectural Advantage**
+The Hyperbolic-inspired model achieved the highest overall fidelity in both the noisy baseline (0.9572) and the protected case (0.9650)[cite: 9]. Its coupling graph, derived from a finite hyperbolic lattice, provides alternative connection patterns that offer inherently more efficient routing cycle pathways compared to standard grids[cite: 1].
+
+## Future System Recommendation
+Future cloud quantum compilers should dynamically toggle error-detection checks based on the hardware's specific geometry and real-time noise profile. 
+
+Applying error protection blindly actively degrades performance on older or highly constrained architectures. Qiskit transpilers must be equipped to calculate a "cost-benefit threshold"—only inserting syndrome or parity checks if the physical qubits' error rates are low enough to mathematically justify the required SWAP routing overhead[cite: 4, 5].
