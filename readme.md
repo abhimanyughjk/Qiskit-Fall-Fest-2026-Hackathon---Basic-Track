@@ -43,3 +43,6 @@ The Hyperbolic-inspired model achieved the highest overall fidelity in both the 
 Future cloud quantum compilers should dynamically toggle error-detection checks based on the hardware's specific geometry and real-time noise profile. 
 
 Applying error protection blindly actively degrades performance on older or highly constrained architectures. Qiskit transpilers must be equipped to calculate a "cost-benefit threshold"—only inserting syndrome or parity checks if the physical qubits' error rates are low enough to mathematically justify the required SWAP routing overhead.
+
+## Note for Judges
+**Note:** Please upload the official `qff_basic_benchmark_.zip` file when prompted by the first code cell to run this notebook.
