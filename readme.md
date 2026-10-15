@@ -1,6 +1,6 @@
 # Qiskit Fall Fest 2026: Geometry-Aware Quantum Cloud Challenge
 **Author:** Abhimanyu Bishnoi  
-**Environment:** Google Colab 
+**Environment:** Google Colab   
 **Live Code:** https://colab.research.google.com/drive/1LcGYCwpL51CUiG6g2YfYaGMa_6g10FZE?usp=sharing
 
 ## Overview
